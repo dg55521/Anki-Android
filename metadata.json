@@ -1,0 +1,8 @@
+{
+  "name": "AnkiDroid",
+  "description": "Spaced-repetition flashcard app with decks, card browser, note editor, FSRS/SM-2 scheduling, and study statistics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

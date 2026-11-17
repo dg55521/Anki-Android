@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AnkiDroid</string>
+    <string name="nav_decks">Decks</string>
+    <string name="nav_browse">Browse</string>
+    <string name="nav_stats">Stats</string>
+    <string name="nav_more">More</string>
+    <string name="search_decks_hint">Search decks</string>
+    <string name="search_cards_hint">Search cards, tags, decks…</string>
+    <string name="study_now">Study Now</string>
+    <string name="show_answer">Show Answer</string>
+    <string name="answer_again">Again</string>
+    <string name="answer_hard">Hard</string>
+    <string name="answer_good">Good</string>
+    <string name="answer_easy">Easy</string>
+    <string name="create_deck">Create deck</string>
+    <string name="create_filtered_deck">Create filtered deck</string>
+    <string name="add_note">Add note</string>
+    <string name="congrats_title">Congratulations!</string>
+    <string name="congrats_subtitle">You have finished this deck for now.</string>
+    <string name="empty_decks_title">No decks match your filter</string>
+    <string name="empty_decks_subtitle">Create a new deck or adjust your search query to start studying.</string>
+</resources>
