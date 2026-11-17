@@ -71,3 +71,40 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
 }
+
+abstract class CopyApkToRootTask : DefaultTask() {
+    @get:InputDirectory
+    abstract val sourceDir: DirectoryProperty
+
+    @get:OutputFile
+    abstract val destinationApk: RegularFileProperty
+
+    @TaskAction
+    fun copyApk() {
+        val apk = sourceDir.get().asFile
+            .listFiles { file -> file.isFile && file.extension == "apk" }
+            ?.firstOrNull()
+            ?: return
+        apk.copyTo(destinationApk.get().asFile, overwrite = true)
+    }
+}
+
+val copyDebugApkToRoot by tasks.registering(CopyApkToRootTask::class) {
+    sourceDir.set(layout.buildDirectory.dir("outputs/apk/debug"))
+    destinationApk.set(rootProject.layout.projectDirectory.file("app-debug.apk"))
+    mustRunAfter("packageDebug", "createDebugApkListingFileRedirect")
+}
+
+val copyReleaseApkToRoot by tasks.registering(CopyApkToRootTask::class) {
+    sourceDir.set(layout.buildDirectory.dir("outputs/apk/release"))
+    destinationApk.set(rootProject.layout.projectDirectory.file("app-release.apk"))
+    mustRunAfter("packageRelease", "createReleaseApkListingFileRedirect")
+}
+
+tasks.configureEach {
+    when (name) {
+        "assembleDebug" -> finalizedBy(copyDebugApkToRoot)
+        "assembleRelease" -> finalizedBy(copyReleaseApkToRoot)
+    }
+}
+

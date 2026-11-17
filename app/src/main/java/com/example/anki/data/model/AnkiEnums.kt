@@ -75,3 +75,49 @@ enum class BrowserSortOrder(val displayName: String) {
     EASE_ASC("Ease / Difficulty"),
     QUESTION_ASC("Question (A–Z)"),
 }
+
+enum class WhiteboardBrushType(
+    val displayName: String,
+    val minWidthRatio: Float,
+    val maxWidthRatio: Float,
+    val baseAlphaFactor: Float,
+    val pressureAlphaFactor: Float,
+) {
+    FOUNTAIN_PEN(
+        displayName = "钢笔",
+        minWidthRatio = 0.25f,
+        maxWidthRatio = 1.70f,
+        baseAlphaFactor = 1.0f,
+        pressureAlphaFactor = 0.0f,
+    ),
+    PENCIL(
+        displayName = "铅笔",
+        minWidthRatio = 0.45f,
+        maxWidthRatio = 1.25f,
+        baseAlphaFactor = 0.55f,
+        pressureAlphaFactor = 0.45f,
+    ),
+    MARKER(
+        displayName = "马克笔",
+        minWidthRatio = 0.90f,
+        maxWidthRatio = 1.55f,
+        baseAlphaFactor = 0.40f,
+        pressureAlphaFactor = 0.15f,
+    ),
+    FINELINER(
+        displayName = "签字笔",
+        minWidthRatio = 0.80f,
+        maxWidthRatio = 1.15f,
+        baseAlphaFactor = 0.98f,
+        pressureAlphaFactor = 0.0f,
+    ),
+}
+
+enum class PressureSensitivity(
+    val displayName: String,
+    val gamma: Float,
+) {
+    LIGHT("轻柔", 0.65f),
+    STANDARD("标准", 1.0f),
+    FIRM("沉稳", 1.45f),
+}

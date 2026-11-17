@@ -5,12 +5,15 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.anki.data.model.PressureSensitivity
 import com.example.anki.data.model.SchedulerMode
 import com.example.anki.data.model.ThemeMode
+import com.example.anki.data.model.WhiteboardBrushType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -27,6 +30,12 @@ data class UserPreferences(
     val reminderEnabled: Boolean = false,
     val reminderHour: Int = 20,
     val reminderMinute: Int = 0,
+    val whiteboardStylusOnly: Boolean = false,
+    val whiteboardBrushType: WhiteboardBrushType = WhiteboardBrushType.FOUNTAIN_PEN,
+    val whiteboardStrokeWidthDp: Float = 5.0f,
+    val whiteboardOpacity: Float = 1.0f,
+    val whiteboardPressureEnabled: Boolean = true,
+    val whiteboardPressureSensitivity: PressureSensitivity = PressureSensitivity.STANDARD,
 )
 
 class PreferencesRepository(context: Context) {
@@ -43,6 +52,12 @@ class PreferencesRepository(context: Context) {
         val REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
         val REMINDER_HOUR = intPreferencesKey("reminder_hour")
         val REMINDER_MINUTE = intPreferencesKey("reminder_minute")
+        val WB_STYLUS_ONLY = booleanPreferencesKey("wb_stylus_only")
+        val WB_BRUSH_TYPE = stringPreferencesKey("wb_brush_type")
+        val WB_STROKE_WIDTH_DP = floatPreferencesKey("wb_stroke_width_dp")
+        val WB_OPACITY = floatPreferencesKey("wb_opacity")
+        val WB_PRESSURE_ENABLED = booleanPreferencesKey("wb_pressure_enabled")
+        val WB_PRESSURE_SENSITIVITY = stringPreferencesKey("wb_pressure_sensitivity")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -61,6 +76,16 @@ class PreferencesRepository(context: Context) {
             reminderEnabled = prefs[Keys.REMINDER_ENABLED] ?: false,
             reminderHour = prefs[Keys.REMINDER_HOUR] ?: 20,
             reminderMinute = prefs[Keys.REMINDER_MINUTE] ?: 0,
+            whiteboardStylusOnly = prefs[Keys.WB_STYLUS_ONLY] ?: false,
+            whiteboardBrushType = prefs[Keys.WB_BRUSH_TYPE]?.let {
+                runCatching { WhiteboardBrushType.valueOf(it) }.getOrNull()
+            } ?: WhiteboardBrushType.FOUNTAIN_PEN,
+            whiteboardStrokeWidthDp = prefs[Keys.WB_STROKE_WIDTH_DP] ?: 5.0f,
+            whiteboardOpacity = prefs[Keys.WB_OPACITY] ?: 1.0f,
+            whiteboardPressureEnabled = prefs[Keys.WB_PRESSURE_ENABLED] ?: true,
+            whiteboardPressureSensitivity = prefs[Keys.WB_PRESSURE_SENSITIVITY]?.let {
+                runCatching { PressureSensitivity.valueOf(it) }.getOrNull()
+            } ?: PressureSensitivity.STANDARD,
         )
     }
 
@@ -103,5 +128,29 @@ class PreferencesRepository(context: Context) {
             it[Keys.REMINDER_HOUR] = hour
             it[Keys.REMINDER_MINUTE] = minute
         }
+    }
+
+    suspend fun setWhiteboardStylusOnly(stylusOnly: Boolean) {
+        dataStore.edit { it[Keys.WB_STYLUS_ONLY] = stylusOnly }
+    }
+
+    suspend fun setWhiteboardBrushType(brushType: WhiteboardBrushType) {
+        dataStore.edit { it[Keys.WB_BRUSH_TYPE] = brushType.name }
+    }
+
+    suspend fun setWhiteboardStrokeWidthDp(widthDp: Float) {
+        dataStore.edit { it[Keys.WB_STROKE_WIDTH_DP] = widthDp.coerceIn(1.5f, 24f) }
+    }
+
+    suspend fun setWhiteboardOpacity(opacity: Float) {
+        dataStore.edit { it[Keys.WB_OPACITY] = opacity.coerceIn(0.15f, 1.0f) }
+    }
+
+    suspend fun setWhiteboardPressureEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.WB_PRESSURE_ENABLED] = enabled }
+    }
+
+    suspend fun setWhiteboardPressureSensitivity(sensitivity: PressureSensitivity) {
+        dataStore.edit { it[Keys.WB_PRESSURE_SENSITIVITY] = sensitivity.name }
     }
 }

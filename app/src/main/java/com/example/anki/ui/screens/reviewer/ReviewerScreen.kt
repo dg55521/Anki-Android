@@ -3,10 +3,7 @@ package com.example.anki.ui.screens.reviewer
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,17 +15,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Brush
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Info
@@ -51,21 +45,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -84,19 +71,11 @@ import com.example.anki.ui.components.EmptyStateCard
 import com.example.anki.ui.components.FlagBadge
 import com.example.anki.ui.components.QueueCountsRow
 import com.example.anki.ui.components.renderedQuestionAndAnswer
-import com.example.anki.ui.theme.FlagBlueColor
-import com.example.anki.ui.theme.FlagGreenColor
 import com.example.anki.ui.theme.FlagOrangeColor
-import com.example.anki.ui.theme.FlagRedColor
 import com.example.anki.ui.theme.RatingAgainColor
 import com.example.anki.ui.theme.RatingEasyColor
 import com.example.anki.ui.theme.RatingGoodColor
 import com.example.anki.ui.theme.RatingHardColor
-
-private data class StrokeSegment(
-    val points: List<Offset>,
-    val color: Color,
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,10 +90,10 @@ fun ReviewerScreen(
     var flagMenuExpanded by remember { mutableStateOf(false) }
     var moreMenuExpanded by remember { mutableStateOf(false) }
 
-    // Whiteboard state
-    val strokes = remember { mutableStateListOf<StrokeSegment>() }
-    var activePoints by remember { mutableStateOf<List<Offset>>(emptyList()) }
-    var activePenColor by remember { mutableStateOf(FlagBlueColor) }
+    val whiteboardState = rememberWhiteboardState()
+    LaunchedEffect(state.currentCard?.card?.id) {
+        whiteboardState.clear()
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -157,7 +136,7 @@ fun ReviewerScreen(
                     if (state.canUndo) {
                         IconButton(
                             onClick = {
-                                strokes.clear()
+                                whiteboardState.clear()
                                 viewModel.undoLastAction()
                             },
                             modifier = Modifier.testTag("reviewer_undo_button"),
@@ -334,7 +313,7 @@ fun ReviewerScreen(
                                 intervalLabel = if (state.showNextTimes) state.ratingPreviews[ReviewRating.AGAIN]?.intervalLabel else null,
                                 color = RatingAgainColor,
                                 onClick = {
-                                    strokes.clear()
+                                    whiteboardState.clear()
                                     viewModel.answerCurrentCard(ReviewRating.AGAIN)
                                 },
                                 modifier = Modifier.weight(1f).testTag("answer_again_button"),
@@ -344,7 +323,7 @@ fun ReviewerScreen(
                                 intervalLabel = if (state.showNextTimes) state.ratingPreviews[ReviewRating.HARD]?.intervalLabel else null,
                                 color = RatingHardColor,
                                 onClick = {
-                                    strokes.clear()
+                                    whiteboardState.clear()
                                     viewModel.answerCurrentCard(ReviewRating.HARD)
                                 },
                                 modifier = Modifier.weight(1f).testTag("answer_hard_button"),
@@ -354,7 +333,7 @@ fun ReviewerScreen(
                                 intervalLabel = if (state.showNextTimes) state.ratingPreviews[ReviewRating.GOOD]?.intervalLabel else null,
                                 color = RatingGoodColor,
                                 onClick = {
-                                    strokes.clear()
+                                    whiteboardState.clear()
                                     viewModel.answerCurrentCard(ReviewRating.GOOD)
                                 },
                                 modifier = Modifier.weight(1f).testTag("answer_good_button"),
@@ -364,7 +343,7 @@ fun ReviewerScreen(
                                 intervalLabel = if (state.showNextTimes) state.ratingPreviews[ReviewRating.EASY]?.intervalLabel else null,
                                 color = RatingEasyColor,
                                 onClick = {
-                                    strokes.clear()
+                                    whiteboardState.clear()
                                     viewModel.answerCurrentCard(ReviewRating.EASY)
                                 },
                                 modifier = Modifier.weight(1f).testTag("answer_easy_button"),
@@ -518,85 +497,18 @@ fun ReviewerScreen(
                     }
                 }
 
-                // Interactive Whiteboard Overlay
+                // Interactive S Pen Pressure-Sensitive Whiteboard Overlay
                 if (state.isWhiteboardOpen) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Transparent)
-                            .pointerInput(activePenColor) {
-                                detectDragGestures(
-                                    onDragStart = { offset -> activePoints = listOf(offset) },
-                                    onDrag = { change, _ ->
-                                        change.consume()
-                                        activePoints = activePoints + change.position
-                                    },
-                                    onDragEnd = {
-                                        if (activePoints.size > 1) {
-                                            strokes.add(StrokeSegment(activePoints, activePenColor))
-                                        }
-                                        activePoints = emptyList()
-                                    },
-                                )
-                            },
-                    ) {
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            fun drawSeg(points: List<Offset>, color: Color) {
-                                if (points.size < 2) return
-                                val path = Path().apply {
-                                    moveTo(points.first().x, points.first().y)
-                                    for (i in 1 until points.size) {
-                                        lineTo(points[i].x, points[i].y)
-                                    }
-                                }
-                                drawPath(
-                                    path = path,
-                                    color = color,
-                                    style = Stroke(width = 7f, cap = StrokeCap.Round, join = StrokeJoin.Round),
-                                )
-                            }
-                            strokes.forEach { drawSeg(it.points, it.color) }
-                            drawSeg(activePoints, activePenColor)
-                        }
-
-                        // Whiteboard floating toolbar
-                        Surface(
-                            shape = RoundedCornerShape(24.dp),
-                            tonalElevation = 6.dp,
-                            shadowElevation = 4.dp,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 16.dp),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                listOf(FlagBlueColor, FlagRedColor, FlagGreenColor, FlagOrangeColor).forEach { c ->
-                                    Box(
-                                        modifier = Modifier
-                                            .size(28.dp)
-                                            .clip(CircleShape)
-                                            .background(c)
-                                            .clickable { activePenColor = c },
-                                    )
-                                }
-                                IconButton(
-                                    onClick = { if (strokes.isNotEmpty()) strokes.removeAt(strokes.lastIndex) },
-                                    modifier = Modifier.size(36.dp),
-                                ) {
-                                    Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo stroke")
-                                }
-                                IconButton(
-                                    onClick = { strokes.clear() },
-                                    modifier = Modifier.size(36.dp),
-                                ) {
-                                    Icon(Icons.Filled.Clear, contentDescription = "Clear whiteboard")
-                                }
-                            }
-                        }
-                    }
+                    WhiteboardOverlay(
+                        state = whiteboardState,
+                        settings = state.whiteboardSettings,
+                        onUpdateStylusOnly = viewModel::setWhiteboardStylusOnly,
+                        onUpdateBrushType = viewModel::setWhiteboardBrushType,
+                        onUpdateStrokeWidthDp = viewModel::setWhiteboardStrokeWidthDp,
+                        onUpdateOpacity = viewModel::setWhiteboardOpacity,
+                        onUpdatePressureEnabled = viewModel::setWhiteboardPressureEnabled,
+                        onUpdatePressureSensitivity = viewModel::setWhiteboardPressureSensitivity,
+                    )
                 }
             }
         }

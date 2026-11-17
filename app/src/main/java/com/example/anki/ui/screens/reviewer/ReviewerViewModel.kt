@@ -7,8 +7,10 @@ import com.example.anki.data.local.CardWithDetails
 import com.example.anki.data.model.CardFlag
 import com.example.anki.data.model.CardQueue
 import com.example.anki.data.model.NoteType
+import com.example.anki.data.model.PressureSensitivity
 import com.example.anki.data.model.ReviewRating
 import com.example.anki.data.model.SchedulerMode
+import com.example.anki.data.model.WhiteboardBrushType
 import com.example.anki.data.preferences.PreferencesRepository
 import com.example.anki.data.repository.AnkiRepository
 import com.example.anki.data.repository.UndoSnapshot
@@ -22,6 +24,15 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+
+data class WhiteboardSettings(
+    val stylusOnly: Boolean = false,
+    val brushType: WhiteboardBrushType = WhiteboardBrushType.FOUNTAIN_PEN,
+    val baseWidthDp: Float = 5.0f,
+    val opacity: Float = 1.0f,
+    val pressureEnabled: Boolean = true,
+    val pressureSensitivity: PressureSensitivity = PressureSensitivity.STANDARD,
+)
 
 data class ReviewerUiState(
     val deckName: String = "",
@@ -42,6 +53,7 @@ data class ReviewerUiState(
     val canUndo: Boolean = false,
     val undoLabel: String = "Undo",
     val isWhiteboardOpen: Boolean = false,
+    val whiteboardSettings: WhiteboardSettings = WhiteboardSettings(),
     val isLoading: Boolean = true,
 )
 
@@ -126,6 +138,14 @@ class ReviewerViewModel(
             canUndo = undoStack.isNotEmpty(),
             undoLabel = undoStack.lastOrNull()?.label ?: "Undo",
             isWhiteboardOpen = whiteboardOpen,
+            whiteboardSettings = WhiteboardSettings(
+                stylusOnly = prefs.whiteboardStylusOnly,
+                brushType = prefs.whiteboardBrushType,
+                baseWidthDp = prefs.whiteboardStrokeWidthDp,
+                opacity = prefs.whiteboardOpacity,
+                pressureEnabled = prefs.whiteboardPressureEnabled,
+                pressureSensitivity = prefs.whiteboardPressureSensitivity,
+            ),
             isLoading = false,
         )
     }.stateIn(
@@ -155,6 +175,30 @@ class ReviewerViewModel(
 
     fun toggleWhiteboard() {
         _isWhiteboardOpen.value = !_isWhiteboardOpen.value
+    }
+
+    fun setWhiteboardStylusOnly(stylusOnly: Boolean) {
+        viewModelScope.launch { preferencesRepository.setWhiteboardStylusOnly(stylusOnly) }
+    }
+
+    fun setWhiteboardBrushType(brushType: WhiteboardBrushType) {
+        viewModelScope.launch { preferencesRepository.setWhiteboardBrushType(brushType) }
+    }
+
+    fun setWhiteboardStrokeWidthDp(widthDp: Float) {
+        viewModelScope.launch { preferencesRepository.setWhiteboardStrokeWidthDp(widthDp) }
+    }
+
+    fun setWhiteboardOpacity(opacity: Float) {
+        viewModelScope.launch { preferencesRepository.setWhiteboardOpacity(opacity) }
+    }
+
+    fun setWhiteboardPressureEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setWhiteboardPressureEnabled(enabled) }
+    }
+
+    fun setWhiteboardPressureSensitivity(sensitivity: PressureSensitivity) {
+        viewModelScope.launch { preferencesRepository.setWhiteboardPressureSensitivity(sensitivity) }
     }
 
     fun answerCurrentCard(rating: ReviewRating) {
